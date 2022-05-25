@@ -1,1 +1,3 @@
+prompt-toolkit==3.0.29
 scapy==2.4.5
+wcwidth==0.2.5
