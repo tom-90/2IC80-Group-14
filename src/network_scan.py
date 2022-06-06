@@ -1,26 +1,60 @@
+from __future__ import unicode_literals
+from prompt_toolkit.eventloop import run_in_executor
+from prompt_toolkit.shortcuts import dialogs
+from prompt_toolkit.widgets import Dialog, Label
 from scapy.all import ARP, Ether, srp
+from client import Client
 
-target_ip = "192.168.56.1/24"
-# IP Address for the destination
-# create ARP packet
-arp = ARP(pdst=target_ip)
-# create the Ether broadcast packet
-# ff:ff:ff:ff:ff:ff MAC address indicates broadcasting
-ether = Ether(dst="ff:ff:ff:ff:ff:ff")
-# stack them
-packet = ether/arp
+from utils import stu, uts
 
-result = srp(packet, timeout=3, iface="enp0s3")[0]
+class NetworkScan:
+    def __init__(self, iface, cidr):
+        self.iface = iface
+        self.cidr = cidr
 
-# a list of clients, we will fill this in the upcoming loop
-clients = []
+    def _scan(self):
+        # create ARP packet
+        arp = ARP(pdst=self.cidr)
+        # create the Ether broadcast packet
+        # ff:ff:ff:ff:ff:ff MAC address indicates broadcasting
+        ether = Ether(dst="ff:ff:ff:ff:ff:ff")
+        # stack them
+        packet = ether/arp
 
-for sent, received in result:
-    # for each response, append ip and mac address to `clients` list
-    clients.append({'ip': received.psrc, 'mac': received.hwsrc})
+        result = srp(
+            packet,
+            timeout=3,
+            iface=self.iface,
+            verbose=False
+        )[0]
 
-# print clients
-print("Available devices in the network:")
-print("IP" + " "*18+"MAC")
-for client in clients:
-    print("{:16}    {}".format(client['ip'], client['mac']))
+        # a list of clients, we will fill this in the upcoming loop
+        clients = []
+
+        for sent, received in result:
+            # for each response, append ip and mac address to `clients` list
+            clients.append(Client(received.psrc, received.hwsrc))
+
+        return clients
+
+    def execute(self):
+        app = dialogs._create_app(
+            Dialog(
+                title="Scanning network...",
+                body=Label(text="Scanning network for available devices...", dont_extend_height=True),
+                with_background=True,
+            ),
+            None
+        )
+
+        def start():
+            try:
+                self.clients = self._scan()
+            finally:
+                app.exit()
+
+        run_in_executor(start)
+
+        app.run()
+
+        return self.clients
