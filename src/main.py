@@ -37,6 +37,10 @@ if len(addresses) == 0:
         title='Address Range',
         text='Could not automatically determine IP range to use. Please enter an IP range in CIDR notation manually.'
     ))
+    
+    # If the user selects cancel, the GUI will be exited and the program will be stop executing. 
+    if cidr == None:
+        exit()
 
     # Determines the network using the address range and IP range
     network = ip_network(cidr)
@@ -70,6 +74,10 @@ victim = radiolist_dialog(
     ]
 )
 
+# If the user selects cancel, the GUI will be exited and the program will be stop executing. 
+if victim == None:
+    exit()
+
 # non sequence
 spoofVictims = radiolist_dialog(
     title='Select network device',
@@ -82,11 +90,31 @@ spoofVictims = radiolist_dialog(
     ]
 )
 
+# If the user selects cancel, the GUI will be exited and the program will be stop executing. 
+if spoofVictims == None:
+    exit()
+
 # The time the attack will be repeated in seconds
-repeatAttackTime = uts(input_dialog(
+repeatAttackTime = input_dialog(
     title='Repeat Time',
     text='Enter a time in seconds, \nfor which the program will resend every time a new ARP attack. \n Recommended: 5'
-))
+)
+
+# If the user selects cancel, the GUI will be exited and the program will be stop executing. 
+if repeatAttackTime == None:
+    exit()
+    
+while (not repeatAttackTime.isdigit()):
+    # The time the attack will be repeated in seconds
+    repeatAttackTime = input_dialog(
+        title='Repeat Time',
+        text='You entered a non-digit number. \n' +
+            'Enter a time in seconds, \nfor which the program will resend every time a new ARP attack. \n Recommended: 5'
+    )
+
+    # If the user selects cancel, the GUI will be exited and the program will be stop executing. 
+    if repeatAttackTime == None:
+        exit()
 
 # Execute the arp attack, with the known iface, victim and selected spoof victims.
 arpAttack = ARPPoisonAttack(iface, victim, spoofVictims)
