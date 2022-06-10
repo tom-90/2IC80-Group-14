@@ -2,21 +2,22 @@ from scapy.all import conf, sniff, IP, UDP, DNS, DNSRR, get_if_addr, send, ETH_P
 from threading import Thread, Event
 
 dev = "enp0s8"
-filter = "udp port 53"
 
 class Sniffer(Thread):
-    def  __init__(self):
+    def  __init__(self, iface, victim):
         super(Sniffer, self).__init__()
 
         self.socket = None
         self.daemon = True
+        self.iface = iface
+        self.victim = victim
         self.stop_sniffer = Event()
 
     def run(self):
         self.socket = conf.L2listen(
             type=ETH_P_ALL,
-            iface=dev,
-            filter=filter
+            iface=self.iface,
+            filter= "udp port 53 and src host " + self.victim.getIP()
         )
 
         sniff(
