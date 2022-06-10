@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 from scapy.all import get_if_list
-from prompt_toolkit.shortcuts import radiolist_dialog, input_dialog, message_dialog, ch
+from prompt_toolkit.shortcuts import radiolist_dialog, input_dialog, message_dialog
 from arp_poison import ARPPoisonAttack
 from client import Client
 from netifaces import ifaddresses, AF_INET
