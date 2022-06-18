@@ -1,0 +1,18 @@
+interface: enp0s8
+clients:
+  # Optional, will auto discover if not specified
+  attacker:
+    ip: "10.0.2.7"
+  victim:
+    ip: "10.0.2.15"
+    # Optionally: MAC address can be specified
+    # mac: "08:00:27:ac:93:70"
+hostnames:
+ - tue.nl
+ - "**.tue.nl"
+ - bernrode.nl
+ - "*.bernrode.nl"
+ - kobalt-it.nl
+ - "*.kobalt-it.nl"
+ - berlehof.nl
+ - "**.berlehof.nl"

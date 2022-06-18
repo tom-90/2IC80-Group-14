@@ -1,4 +1,3 @@
-from __future__ import print_function
 import logging
 import os
 import signal
@@ -13,7 +12,16 @@ from services.http import HTTPService
 
 
 def start(config):
-    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(message)s', stream=sys.stdout)
+    global stop_app
+    if config.verbose:
+        logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(message)s', stream=sys.stdout)
+    else:
+        logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(message)s', stream=sys.stdout)
+
+    if config.log_file:
+        fileHandler = logging.FileHandler(config.log_file)
+        fileHandler.setFormatter(logging.Formatter('%(asctime)s %(message)s'))
+        logging.getLogger().addHandler(fileHandler)
 
     services = [
         ARPService(config),
@@ -22,17 +30,27 @@ def start(config):
         ForwarderService(config)
     ]
 
+    stop_app = False
     def stop(signal, frame):
-        print("Stopping")
-        reactor.stop()
-        for service in services:
-            service.stop()
-        sleep(0.5)
-        print("Exiting")
-        os._exit(0)
+        global stop_app
+        stop_app = True
 
     for service in services:
         reactor.callInThread(service.start)
 
     signal.signal(signal.SIGINT, stop)
+
+    def stopThread():
+        global stop_app
+        while not stop_app:
+            sleep(0.1)
+        logging.warning("Stopping")
+        reactor.stop()
+        for service in services:
+            service.stop()
+        sleep(0.5)
+        logging.warning("Exiting")
+        os._exit(0)
+
+    reactor.callInThread(stopThread)
     reactor.run()

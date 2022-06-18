@@ -1,11 +1,9 @@
 from __future__ import unicode_literals
-from prompt_toolkit.eventloop import run_in_executor
+from prompt_toolkit.eventloop import run_in_executor_with_context
 from prompt_toolkit.shortcuts import dialogs
 from prompt_toolkit.widgets import Dialog, Label
 from scapy.all import ARP, Ether, srp
 from data.client import Client
-
-from utils.strings import stu, uts
 
 class NetworkScan:
     def __init__(self, iface, cidr):
@@ -53,7 +51,10 @@ class NetworkScan:
             finally:
                 app.exit()
 
-        run_in_executor(start)
+        def pre_run():
+            dialogs.run_in_executor_with_context(start)
+
+        app.pre_run_callables.append(pre_run)
 
         app.run()
 

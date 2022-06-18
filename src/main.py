@@ -1,145 +1,21 @@
-from __future__ import unicode_literals
-from scapy.all import get_if_list, get_if_addr, get_if_hwaddr, conf
-from prompt_toolkit.shortcuts import radiolist_dialog, input_dialog, message_dialog
-from netifaces import ifaddresses, AF_INET
-from ipaddress import ip_network
-
-from utils.network_scan import NetworkScan
-from utils.strings import stu, uts
-from data.config import Config
-from data.client import Client
 from start import start
+from prompt import prompt
+from config_file import get_config, args
+from utils.root import is_root
+from sys import exit
 
-# Show GUI, where the user can select the interface they want to use (e.g. enp0s3)
-iface = uts(radiolist_dialog(
-    title="Interface",
-    text="Select the interface to use",
-    # The values that can be chosen from, are all interfaces (v) in the interface list. 
-    # values = identifier, text. 
-    values=[
-        (stu(v), stu(v)) for v in get_if_list()
-    ]
-))
+if not is_root():
+    print("This program needs to be run as root.")
+    exit(1)
 
-# If the user selects cancel, the GUI will be exited and the program will be stop executing. 
-if iface == None:
-    exit()
+config = get_config()
 
-# Retrieve network address information for the interface, including the subnet mask
-addresses = ifaddresses(iface)[AF_INET]
-network = None
+if not config:
+    config = prompt()
 
-# If the program cannot find any ip addresses, the user will be asked to give the program an IP range. 
-if len(addresses) == 0:
-    cidr = uts(input_dialog(
-        title='Address Range',
-        text='Could not automatically determine IP range to use. Please enter an IP range in CIDR notation manually.'
-    ))
-    
-    # If the user selects cancel, the GUI will be exited and the program will be stop executing. 
-    if cidr == None:
-        exit()
-
-    # Determines the network using the address range and IP range
-    network = ip_network(cidr)
-else:
-    network = ip_network((addresses[0]['addr'], addresses[0]['netmask']), strict=False)
-
-# Convert network info to CIDR format, such that always the same format is used
-cidr = str(network)
-
-# Looking for potential victims on the network
-scan = NetworkScan(iface, cidr)
-clients = scan.execute()
-
-# If there were no victims found, it the program stops executing.
-if(len(clients) == 0):
-    message_dialog(
-        title='No network devices found',
-        text='No clients have been found.',
-        ok_text='Exit'
-    )
-
-    exit()
-
-# Show all the victims the user can choose between
-victim = radiolist_dialog(
-    title='Select network device',
-    text='Please select a victim:',
-    # values = identifier, text. 
-    values=[
-        (c, stu(c.getMAC()) + ' - ' + stu(c.getIP())) for c in clients
-    ]
-)
-
-# If the user selects cancel, the GUI will be exited and the program will be stop executing. 
-if victim == None:
-    exit()
-
-# non sequence
-spoofVictims = radiolist_dialog(
-    title='Select network device',
-    text='Please select the addresses that you want to spoof:',
-    # values = identifier, text. 
-    values=[
-        ([c], stu(c.getMAC()) + ' - ' + stu(c.getIP())) for c in clients
-    ] + [
-        (clients, 'All of the options above')
-    ]
-)
-
-# If the user selects cancel, the GUI will be exited and the program will be stop executing. 
-if spoofVictims == None:
-    exit()
-
-
-
-# Select hostnames to spoof
-hostNames = input_dialog(
-    title="Select hostnames",
-    text="Please enter the hostnames to spoof, seperated by |. For all, press OK."
-)
-
-# If the user selects cancel, the GUI will be exited and the program will be stop executing. 
-if hostNames == None:
-    exit()
-
-# Parse the hostnames input
-if hostNames == "":
-    hostNames = "*"
-else:
-    hostNames = hostNames.split("|")
-
-    
-
-# The time the attack will be repeated in seconds
-repeatAttackTime = input_dialog(
-    title='Repeat Time',
-    text='Enter a time in seconds, \nfor which the program will resend every time a new ARP attack. \n Recommended: 5'
-)
-
-# If the user selects cancel, the GUI will be exited and the program will be stop executing. 
-if repeatAttackTime == None:
-    exit()
-    
-while (not repeatAttackTime.isdigit()):
-    # The time the attack will be repeated in seconds
-    repeatAttackTime = input_dialog(
-        title='Repeat Time',
-        text='You entered a non-digit number. \n' +
-            'Enter a time in seconds, \nfor which the program will resend every time a new ARP attack. \n Recommended: 5'
-    )
-
-    # If the user selects cancel, the GUI will be exited and the program will be stop executing. 
-    if repeatAttackTime == None:
-        exit()
-
-config = Config()
-
-config.iface = iface
-config.victim = victim
-config.attacker = Client(get_if_addr(iface), get_if_hwaddr(iface))
-config.gateway = Client.fromIP(conf.route.route("0.0.0.0")[2])
-config.arp_sleep_time = float(repeatAttackTime)
+if args.verbose:
+    config.verbose = True
+if args.log_file:
+    config.log_file = args.log_file
 
 start(config)
