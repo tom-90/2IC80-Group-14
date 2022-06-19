@@ -7,12 +7,15 @@ clients:
     ip: "10.0.2.15"
     # Optionally: MAC address can be specified
     # mac: "08:00:27:ac:93:70"
+# Configure one or more hostnames to intercept traffic for
+# Write "*" to match any host
+# Use "*.tue.nl" to match any subdomain of tue.nl (not including tue.nl itself)
+# Use "**.tue.nl" to match any multi-level subdomain of tue.nl
 hostnames:
- - tue.nl
  - "**.tue.nl"
- - bernrode.nl
- - "*.bernrode.nl"
- - kobalt-it.nl
- - "*.kobalt-it.nl"
- - berlehof.nl
- - "**.berlehof.nl"
+# Configure a custom time interval for which to send ARP packets
+# arp_sleep_time: 1
+# Configure a custom HTTP listener port (most likely, you want this listening on port 80 to intercept traffic)
+# http_listen_port: 80
+# Configure a custom DNS listener port (can be any arbitrary port, as all traffic going to DNS port 53 will be forwarded to this port)
+# dns_listen_port: 10595

@@ -34,6 +34,9 @@ class DNSService(Service):
             dns_answer = None
             match = False
             for hostname in self.config.hostnames:
+                if hostname == "*":
+                    match = True
+                    break
                 regex = '^'+ re.escape(hostname).replace('\\*\\*','.*').replace('\\*','[^\.]+') +'$'
                 match = bool(re.match(regex, queried_host))
                 if match:
@@ -41,7 +44,6 @@ class DNSService(Service):
 
             if not match:
                 try:
-                    logging.warning("[DNS] Querying: " + queried_host)
                     dns_req = IP(dst='8.8.8.8')/UDP(dport=53)/DNS(rd=1, qd=dns.qd)
                     answer = sr1(dns_req, verbose=0, timeout=3)
                     answer[DNS].id = dns.id
@@ -49,7 +51,6 @@ class DNSService(Service):
                             UDP(sport=udp.dport,
                                     dport=udp.sport) / \
                             answer[DNS]
-                    logging.warning("[DNS] Responding: " + queried_host)
                     send(dns_reply, iface=self.config.iface, verbose=False)
                 except:
                     logging.warning("[DNS] Failed to resolve host: " + queried_host)

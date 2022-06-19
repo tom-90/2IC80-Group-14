@@ -12,6 +12,8 @@ parser.add_argument('-c', '--config', default=None,
                     help='yaml config file (default: prompt for options)')
 parser.add_argument('-l', '--log-file', default=None,
                     help='file where logs should be saved')
+parser.add_argument('-d', '--disable-http-forward', action='store_true',
+                    help='disable the forwarding of HTTP traffic to HTTPS (this allows you to run your own webserver to serve the user a different spoofed website)')
 parser.add_argument('-v', '--verbose', dest='verbose', help='Enable verbose logging', action='store_true')
 
 args = parser.parse_args()

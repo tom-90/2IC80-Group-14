@@ -83,7 +83,7 @@ def prompt():
     # Select hostnames to spoof
     hostNames = input_dialog(
         title="Select hostnames",
-        text="Please enter the hostnames to spoof, comma-seperated.\nWildcards are supported: enter *.tue.nl to match any subdomain of tue.nl (not including tue.nl) itself. \nEnter * for any domain."
+        text="Please enter the hostnames to spoof, comma-seperated.\nWildcards are supported: enter *.tue.nl to match any subdomain of tue.nl (not including tue.nl itself).\nUse **.tue.nl to match any multi-level subdomain of tue.nl.\nEnter * for any domain."
     ).run()
 
     # If the user selects cancel, the GUI will be exited and the program will be stop executing. 
@@ -92,7 +92,7 @@ def prompt():
 
     # Parse the hostnames input
     if hostNames == "":
-        hostNames = "*"
+        hostNames = ["*"]
     else:
         hostNames = hostNames.split(",")
 

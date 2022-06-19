@@ -17,5 +17,7 @@ if args.verbose:
     config.verbose = True
 if args.log_file:
     config.log_file = args.log_file
+if args.disable_http_forward:
+    config.http_listen_port = None
 
 start(config)
